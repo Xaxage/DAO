@@ -1,11 +1,13 @@
 package com.xaxage.daojdbc.dao;
 
 import com.xaxage.daojdbc.domain.Book;
+import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Component;
 
-@Component
+import java.util.List;
+
+
 public class BookDaoImpl implements BookDao {
 
     private final JdbcTemplate jdbcTemplate;
@@ -15,13 +17,29 @@ public class BookDaoImpl implements BookDao {
     }
 
     @Override
+    public List<Book> findAllBooks(Pageable pageable) {
+        return jdbcTemplate.query("SELECT * FROM book limit ? offset ?", getBookMapper(), pageable.getPageSize(),
+                pageable.getOffset());
+    }
+
+    @Override
+    public List<Book> findAllBooks(int pageSize, int offSet) {
+        return jdbcTemplate.query("SELECT * FROM book limit ? offset ?", getBookMapper(), pageSize, offSet);
+    }
+
+    @Override
+    public List<Book> findAllBooks() {
+        return jdbcTemplate.query("SELECT * FROM book", getBookMapper());
+    }
+
+    @Override
     public Book getById(Long id) {
-        return jdbcTemplate.queryForObject("SELECT * FROM book WHERE id = ?", getRowMapper(), id);
+        return jdbcTemplate.queryForObject("SELECT * FROM book WHERE id = ?", getBookMapper(), id);
     }
 
     @Override
     public Book findBookByTitle(String title) {
-        return jdbcTemplate.queryForObject("SELECT * FROM book WHERE title = ?", getRowMapper(), title);
+        return jdbcTemplate.queryForObject("SELECT * FROM book WHERE title = ?", getBookMapper(), title);
     }
 
     @Override
@@ -45,10 +63,10 @@ public class BookDaoImpl implements BookDao {
 
     @Override
     public void deleteBookById(Long id) {
-        jdbcTemplate.update("DELETE FROM book WHERE id = ?",id);
+        jdbcTemplate.update("DELETE FROM book WHERE id = ?", id);
     }
 
-    private RowMapper<Book> getRowMapper() {
+    private RowMapper<Book> getBookMapper() {
         return new BookMapper();
     }
 }

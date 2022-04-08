@@ -1,16 +1,20 @@
 package com.xaxage.daojdbc;
 
-import com.xaxage.daojdbc.dao.AuthorDao;
 import com.xaxage.daojdbc.dao.BookDao;
-import com.xaxage.daojdbc.domain.Author;
+import com.xaxage.daojdbc.dao.BookDaoImpl;
 import com.xaxage.daojdbc.domain.Book;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+
+import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,68 +26,70 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class DaoIntegrationTest {
 
     @Autowired
-    AuthorDao authorDao;
+    JdbcTemplate jdbcTemplate;
 
-    @Autowired
     BookDao bookDao;
 
+    @BeforeEach
+    void setUp() {
+        bookDao = new BookDaoImpl(jdbcTemplate);
+    }
 
 
     @Test
-    void testDeleteAuthor() {
-        Author author = new Author();
-        author.setFirstName("john");
-        author.setLastName("t");
+    void testFindAllBooks() {
+        List<Book> books = bookDao.findAllBooks();
 
-        Author saved = authorDao.saveNewAuthor(author);
-
-        authorDao.deleteAuthorById(saved.getId());
-
-        assertThrows(EmptyResultDataAccessException.class,
-                () -> {
-                    authorDao.getById(saved.getId());
-                });
-
+        assertThat(books).isNotNull();
+        assertThat(books.size()).isGreaterThan(5);
     }
 
     @Test
-    void testUpdateAuthor() {
-        Author author = new Author();
-        author.setFirstName("john");
-        author.setLastName("t");
+    void testFindAllBooksPage1_pageable() {
+        List<Book> books = bookDao.findAllBooks(PageRequest.of(0, 10));
 
-        Author saved = authorDao.saveNewAuthor(author);
-
-        saved.setLastName("Thompson");
-        Author updated = authorDao.updateAuthor(saved);
-
-        assertThat(updated.getLastName()).isEqualTo("Thompson");
+        assertThat(books).isNotNull();
+        assertThat(books.size()).isEqualTo(10);
     }
 
     @Test
-    void testInsertAuthor() {
-        Author author = new Author();
-        author.setFirstName("john");
-        author.setLastName("t22");
+    void testFindAllBooksPage2_pageable() {
+        List<Book> books = bookDao.findAllBooks(PageRequest.of(1, 10));
 
-        Author saved = authorDao.saveNewAuthor(author);
-
-        assertThat(saved).isNotNull();
+        assertThat(books).isNotNull();
+        assertThat(books.size()).isEqualTo(10);
     }
 
     @Test
-    void testGetAuthorByName() {
-        Author author = authorDao.findAuthorByName("Craig", "Walls");
+    void testFindAllBooksPage13_pageable() {
+        List<Book> books = bookDao.findAllBooks(PageRequest.of(13, 10));
 
-        assertThat(author).isNotNull();
+        assertThat(books).isNotNull();
+        assertThat(books.size()).isEqualTo(0);
     }
 
     @Test
-    void testGetAuthor() {
+    void testFindAllBooksPage1() {
+        List<Book> books = bookDao.findAllBooks(10, 0);
 
-        Author author = authorDao.getById(1l);
+        assertThat(books).isNotNull();
+        assertThat(books.size()).isEqualTo(10);
+    }
 
-        assertThat(author.getId()).isNotNull();
+    @Test
+    void testFindAllBooksPage2() {
+        List<Book> books = bookDao.findAllBooks(10, 10);
+
+        assertThat(books).isNotNull();
+        assertThat(books.size()).isEqualTo(10);
+    }
+
+    @Test
+    void testFindAllBooksPage13() {
+        List<Book> books = bookDao.findAllBooks(10, 130);
+
+        assertThat(books).isNotNull();
+        assertThat(books.size()).isEqualTo(0);
     }
 
     @Test
@@ -133,14 +139,14 @@ public class DaoIntegrationTest {
     }
 
     @Test
-    void testGetBookByName() {
+    void findBookByTitle() {
         Book book = bookDao.findBookByTitle("Clean Code");
 
         assertThat(book).isNotNull();
     }
 
     @Test
-    void testGetBook() {
+    void getById() {
         Book book = bookDao.getById(3L);
 
         assertThat(book.getId()).isNotNull();
