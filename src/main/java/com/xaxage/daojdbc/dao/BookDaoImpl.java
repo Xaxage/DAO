@@ -1,7 +1,7 @@
 package com.xaxage.daojdbc.dao;
 
-import com.xaxage.daojdbc.domain.Author;
 import com.xaxage.daojdbc.domain.Book;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
@@ -19,12 +19,47 @@ public class BookDaoImpl implements BookDao {
     }
 
     @Override
+    public List<Book> findAllBooksSortByTitle(Pageable pageable) {
+        EntityManager em = getEntityManager();
+        String hql = "SELECT b FROM Book b ORDER BY b.title " + pageable.getSort()
+                .getOrderFor("title").getDirection().name();
+
+        try {
+            TypedQuery<Book> query = em.createQuery(hql, Book.class);
+            query.setFirstResult(Math.toIntExact(pageable.getOffset()));
+            query.setMaxResults(pageable.getPageSize());
+            return query.getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public List<Book> findAllBooks(Pageable pageable) {
+        EntityManager em = getEntityManager();
+
+        try {
+            TypedQuery<Book> query = em.createQuery("SELECT b FROM Book b", Book.class);
+            query.setFirstResult(Math.toIntExact(pageable.getOffset()));
+            query.setMaxResults(pageable.getPageSize());
+            return query.getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public List<Book> findAllBooks(int pageSize, int offset) {
+        return null;
+    }
+
+    @Override
     public List<Book> findAll() {
         EntityManager em = getEntityManager();
-        try{
-            TypedQuery<Book> typedQuery = em.createNamedQuery("book_find_all",Book.class);
+        try {
+            TypedQuery<Book> typedQuery = em.createNamedQuery("book_find_all", Book.class);
             return typedQuery.getResultList();
-        }finally {
+        } finally {
             em.close();
         }
     }
@@ -32,14 +67,14 @@ public class BookDaoImpl implements BookDao {
     @Override
     public Book findByISBN(String isbn) {
         EntityManager em = getEntityManager();
-        try{
+        try {
             Query query = em.createQuery("SELECT b FROM Book b WHERE b.isbn = :isbn");
-            query.setParameter("isbn",isbn);
+            query.setParameter("isbn", isbn);
 
-            Book book =(Book) query.getSingleResult();
+            Book book = (Book) query.getSingleResult();
 
             return book;
-        }finally {
+        } finally {
             em.close();
         }
     }
@@ -100,7 +135,7 @@ public class BookDaoImpl implements BookDao {
         em.close();
     }
 
-    private EntityManager getEntityManager(){
+    private EntityManager getEntityManager() {
         return emf.createEntityManager();
     }
 }
